@@ -1,0 +1,44 @@
+<idea-plugin>
+    <id>com.merger.merger</id>
+    <name>Merger</name>
+    <vendor>ksups</vendor>
+
+    <!-- Platform modules your code uses -->
+    <!-- VCS core + Git plugin -->
+    <depends>com.intellij.modules.vcs</depends>
+    <depends>Git4Idea</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow
+                id="Multi-Repo Merger"
+                anchor="left"
+                factoryClass="com.merger.merger.GitMergerToolWindowFactory"
+                icon="AllIcons.Vcs.Merge"
+                canCloseContent="false"
+                stripeTitle="Multi-Repo Merger"/>
+        <notificationGroup
+                id="multi.repo.merge.notifications"
+                displayName="Multi-Repo Merge"
+                isLogByDefault="true"
+                toolWindowId="Notifications"
+                parentId="VCS"
+                displayType="BALLOON"/>
+        <projectConfigurable instance="com.merger.merger.ai.AiSettingsConfigurable"
+                             displayName="AI Merge" />
+        <applicationConfigurable
+                instance="com.merger.merger.ai.AiSettingsConfigurable"
+                displayName="AI Merge"/>
+
+    </extensions>
+
+    <actions>
+        <action id="com.merger.merger.ShowToolWindowAction"
+                class="com.merger.merger.ShowToolWindowAction"
+                text="Show Multi-Repo Merger"
+                description="Open the multi-repo git merger tool window"
+                icon="AllIcons.Vcs.Merge">
+            <add-to-group group-id="Vcs.Toolbar" anchor="last"/>
+            <keyboard-shortcut first-keystroke="ctrl alt M" keymap="$default"/>
+        </action>
+    </actions>
+</idea-plugin>
