@@ -13,9 +13,9 @@ import git4idea.repo.GitRepositoryManager
 import java.awt.BorderLayout
 import java.awt.Dimension
 import javax.swing.*
-import com.intellij.openapi.observable.properties.PropertyGraph
 import com.merger.merger.ai.AiSecrets
 import com.intellij.openapi.options.ShowSettingsUtil
+import com.intellij.ui.JBSplitter
 
 data class MergeOptions(
     var sourceBranch: String = "",
@@ -27,20 +27,14 @@ data class MergeOptions(
     var pushAfterMerge: Boolean = false,
     var stopOnConflict: Boolean = true,
     var languageModeProp: String = "Auto"
-){
-
-}
+)
 
 class GitMergerPanel(private val project: Project) {
-    private val pg = PropertyGraph()
-    private val languageModeProp = pg.property("Auto")
     val component: JComponent get() = root
     private val root = JPanel(BorderLayout())
-    private val repoListContainer = JPanel().apply {
-        layout = BoxLayout(this, BoxLayout.Y_AXIS)
-    }
-    private var repos: List<GitRepository> =
-        GitRepositoryManager.getInstance(project).repositories
+
+    private val repoListContainer = JPanel().apply { layout = BoxLayout(this, BoxLayout.Y_AXIS) }
+    private var repos: List<GitRepository> = GitRepositoryManager.getInstance(project).repositories
     private lateinit var runButton: JButton
     private var apiKeyUi: String = AiSecrets.get().orEmpty()
 
@@ -56,116 +50,106 @@ class GitMergerPanel(private val project: Project) {
         background = JBColor.PanelBackground
     }
 
-    private val panel: DialogPanel = panel {
-        group("Repositories (${repos.size})") {
-            row {
-                button("Refresh") { rebuildRepoList() }
-                button("Select All") {
-                    repoChecks.values.forEach { it.isSelected = true }
-                    updateRunEnabled()
+    private val reposSubPanel: DialogPanel by lazy {
+        panel {
+            group("Repositories") {
+                row {
+                    button("Refresh") { rebuildRepoList() }
+                    button("Select All") {
+                        repoChecks.values.forEach { it.isSelected = true }
+                        updateRunEnabled()
+                    }
+                    button("Select None") {
+                        repoChecks.values.forEach { it.isSelected = false }
+                        updateRunEnabled()
+                    }
                 }
-                button("Select None") {
-                    repoChecks.values.forEach { it.isSelected = false }
-                    updateRunEnabled()
-                }
-            }
-            row {
-                val repoScroll = JScrollPane(repoListContainer).apply {
-                    preferredSize = Dimension(0, 70)
-                    minimumSize = Dimension(0, 50)
-                }
-                cell(repoScroll).align(Align.FILL)
-            }.resizableRow()
-        }
-
-        group("Merge Options") {
-            row("Source branch:") {
-                textField()
-                    .bindText(options::sourceBranch)
-                    .validationOnInput { if (it.text.isNullOrBlank()) error("Required") else null }
-                    .focused()
-            }
-            row("Output language:") {
-                comboBox(listOf("Auto", "C#", "JSON", "XML", "Plain text"))
-                    .bindItem(
-                        getter = { options::languageModeProp.get() },
-                        setter = { options::languageModeProp }
-                    )
-                    .comment("Auto uses file extension; override if needed")
-            }
-            row {
-                checkBox("Fetch before merge").bindSelected(options::fetchBeforeMerge)
-                checkBox("Auto-stash if dirty").bindSelected(options::stashIfDirty)
-            }
-            row {
-                checkBox("Allow dirty merge (attempt without stashing)").bindSelected(options::allowDirtyMerge)
-            }
-            row {
-                checkBox("Use --no-ff").bindSelected(options::noFastForward)
-                checkBox("Use --squash").bindSelected(options::squash)
-            }
-            row {
-                checkBox("Push after merge").bindSelected(options::pushAfterMerge)
-                checkBox("Stop on first conflict").bindSelected(options::stopOnConflict)
+                row {
+                    scrollCell(repoListContainer).align(Align.FILL)
+                }.resizableRow()
             }
         }
+    }
 
-        separator()
+    private val mainPanel: DialogPanel by lazy {
+        panel {
+            group("Merge Options") {
+                row("Source branch:") {
+                    textField()
+                        .bindText(options::sourceBranch)
+                        .validationOnInput { if (it.text.isNullOrBlank()) error("Required") else null }
+                        .focused()
+                }
+                row("Output language:") {
+                    comboBox(listOf("Auto", "C#", "JSON", "XML", "Plain text"))
+                        .bindItem(
+                            getter = { options.languageModeProp },
+                            setter = { options.languageModeProp = it ?: "Auto" }
+                        )
+                        .comment("Auto uses file extension; override if needed")
+                }
+                row {
+                    checkBox("Fetch before merge").bindSelected(options::fetchBeforeMerge)
+                    checkBox("Auto-stash if dirty").bindSelected(options::stashIfDirty)
+                }
+                row {
+                    checkBox("Allow dirty merge (attempt without stashing)").bindSelected(options::allowDirtyMerge)
+                }
+                row {
+                    checkBox("Use --no-ff").bindSelected(options::noFastForward)
+                    checkBox("Use --squash").bindSelected(options::squash)
+                }
+                row {
+                    checkBox("Push after merge").bindSelected(options::pushAfterMerge)
+                    checkBox("Stop on first conflict").bindSelected(options::stopOnConflict)
+                }
+            }
 
-//        row("API Key:")  {
-//            passwordField()
-//                .bindText(::apiKeyUi)
-//                .comment("Stored in Password Safe (encrypted). Not written to project files.")
-//        }
-//        row {
-//            button("Clear saved key") {
-//                AiSecrets.save(null)
-//                apiKeyUi = ""
-//            }
-//        }
-        row {
-            runButton = button("Run Sequential Merge") {
-                val validations = panel.validateAll()
-                if (validations.isNotEmpty()) return@button
-                panel.apply()
-                runMerges()
-            }.component
-            runButton.isEnabled = false
-        }
+            separator()
 
-
-        group("Log") {
             row {
+                runButton = button("Run Sequential Merge") {
+                    // capture UI → model
+                    mainPanel.apply()
+                    val validations = mainPanel.validateAll()
+                    if (validations.isNotEmpty()) return@button
+                    runMerges()
+                }.component
+                runButton.isEnabled = false
+
                 button("AI Settings…") {
                     ShowSettingsUtil.getInstance().showSettingsDialog(project, "AI Merge")
-                    // or: ShowSettingsUtil.getInstance().showSettingsDialog(project, AiSettingsConfigurable::class.java)
                 }
             }
 
-            row {
-                checkBox("Auto-scroll")
-                    .applyToComponent { isSelected = true }
-                    .onChanged { autoScroll = it.isSelected }
-
-                button("Clear") {
-                    clearLog()
+            group("Log") {
+                row {
+                    checkBox("Auto-scroll")
+                        .applyToComponent { isSelected = true }
+                        .onChanged { autoScroll = it.isSelected }
+                    button("Clear") { clearLog() }
                 }
-//                 button("Copy") { copyLogToClipboard() }
+                row {
+                    scrollCell(logArea).align(Align.FILL)
+                }.resizableRow()
             }
-            row {
-                scrollCell(logArea)
-                    .align(Align.FILL)
-            }.resizableRow()
+        }.apply { reset() }
+    }
+
+    private val splitter: JBSplitter by lazy {
+        JBSplitter(true, 0.35f).apply {
+            setHonorComponentsMinimumSize(false)
+            firstComponent  = reposSubPanel.apply { minimumSize = java.awt.Dimension(0, 0) }
+            secondComponent = mainPanel.apply    { minimumSize = java.awt.Dimension(0, 0) }
         }
-    }.apply { reset() }
-
-    private fun clearLog() {
-        logArea.text = ""
     }
 
     init {
-        root.add(panel, BorderLayout.CENTER)
+        root.add(splitter, BorderLayout.CENTER)
+        rebuildRepoList()
     }
+
+    private fun clearLog() { logArea.text = "" }
 
     private fun rebuildRepoList() {
         repos = GitRepositoryManager.getInstance(project).repositories
@@ -189,7 +173,9 @@ class GitMergerPanel(private val project: Project) {
     }
 
     private fun updateRunEnabled() {
-        runButton.isEnabled = repoChecks.values.any { it.isSelected }
+        if (::runButton.isInitialized) {
+            runButton.isEnabled = repoChecks.values.any { it.isSelected }
+        }
     }
 
     private fun reposChosen(): ComponentPredicate = object : ComponentPredicate() {
@@ -202,24 +188,17 @@ class GitMergerPanel(private val project: Project) {
     private fun log(line: String) {
         invokeLater {
             logArea.append(line + "\n")
-            if (autoScroll) {
-                logArea.caretPosition = logArea.document.length
-            }
+            if (autoScroll) logArea.caretPosition = logArea.document.length
         }
     }
 
     private fun runMerges() {
         val selected = repoChecks.filterValues { it.isSelected }.keys.toList()
-        if (selected.isEmpty()) {
-            log("No repositories selected.")
-            return
-        }
+        if (selected.isEmpty()) { log("No repositories selected."); return }
 
         log("Starting sequential merge of '${options.sourceBranch}' into ${selected.size} repos…")
         ProgressManager.getInstance().runProcessWithProgressSynchronously(
-            {
-                MergeRunner(project, ::log).run(selected, options)
-            },
+            { MergeRunner(project, ::log).run(selected, options) },
             "Merging '${options.sourceBranch}' across repositories…",
             true,
             project
