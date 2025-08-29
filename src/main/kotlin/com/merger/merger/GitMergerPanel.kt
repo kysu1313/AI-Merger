@@ -21,6 +21,7 @@ import java.awt.Color
 
 data class MergeOptions(
     var sourceBranch: String = "",
+    var aiAssistMerge: Boolean = true,
     var fetchBeforeMerge: Boolean = true,
     var stashIfDirty: Boolean = true,
     var allowDirtyMerge: Boolean = false,
@@ -90,6 +91,9 @@ class GitMergerPanel(private val project: Project) {
                             setter = { options.languageModeProp = it ?: "Auto" }
                         )
                         .comment("Auto uses file extension; override if needed")
+                }
+                row {
+                    checkBox("Use AI for merge conflicts").bindSelected(options::aiAssistMerge)
                 }
                 row {
                     checkBox("Fetch before merge").bindSelected(options::fetchBeforeMerge)

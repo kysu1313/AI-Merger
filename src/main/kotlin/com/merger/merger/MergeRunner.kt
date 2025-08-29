@@ -107,7 +107,7 @@ class MergeRunner(
             repo.update()
 
             // AI auto resolution
-            if (!mergeOk) {
+            if (!mergeOk && opts.aiAssistMerge) {
                 val remaining = listConflictedRelPaths(repo, log)
                 if (remaining.isEmpty()) {
                     log("   ❌ merge failed without conflicts (likely bad ref or non-mergeable state).")
