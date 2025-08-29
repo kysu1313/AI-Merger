@@ -1,4 +1,3 @@
-// src/main/kotlin/com/merger/merger/MergeRunner.kt
 package com.merger.merger
 
 import com.intellij.openapi.application.ApplicationManager
