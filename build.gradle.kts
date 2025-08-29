@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "2.2.10"              // <-- bump to 2.2.x
+    kotlin("jvm") version "2.2.10"
     id("org.jetbrains.intellij.platform") version "2.7.2"
 }
 
@@ -11,7 +11,7 @@ repositories {
 dependencies {
     intellijPlatform {
         rider("2025.2") {
-            useInstaller.set(false)             // <-- required for Rider target right now
+            useInstaller.set(false)
         }
         bundledPlugin("Git4Idea")
     }
@@ -23,14 +23,8 @@ java {
     }
 }
 
-// Keep Kotlin on Java 17 too
 kotlin {
     jvmToolchain(17)
-    // (Optional) lock language/api level if you want:
-    // compilerOptions {
-    //     languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2)
-    //     apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2)
-    // }
 }
 
 tasks.runIde {
