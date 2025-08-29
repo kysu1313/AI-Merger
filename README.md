@@ -18,7 +18,7 @@ Optional **AI auto-merge** kicks in when conflicts happen (OpenAI-compatible).
 
 <img src="src/screenshots/panel.png" alt="Tool window" width="440"/>
 
-<img src="src/screenshots/settings.png" alt="AI settings" width="640"/>
+<img src="src/screenshots/settings.png" alt="AI settings" width="740"/>
 
 ---
 
