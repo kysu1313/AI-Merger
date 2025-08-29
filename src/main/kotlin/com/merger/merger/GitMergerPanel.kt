@@ -83,7 +83,8 @@ class GitMergerPanel(private val project: Project) {
                         .focused()
                 }
                 row("Output language:") {
-                    comboBox(listOf("Auto", "C#", "JSON", "XML", "Plain text"))
+                    comboBox(listOf("Auto", "C#", "Java", "TypeScript", "JavaScript", "Kotlin",
+                        "SQL", "JSON", "XML", "YAML", "Markdown", "Plain text"))
                         .bindItem(
                             getter = { options.languageModeProp },
                             setter = { options.languageModeProp = it ?: "Auto" }
