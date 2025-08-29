@@ -10,7 +10,8 @@ class AiSettings : PersistentStateComponent<AiSettings.SettingsState> {
 
     data class SettingsState(
         var baseUrl: String = "https://api.openai.com/v1",
-        var model: String = "gpt-4o-mini"
+        var model: String = "gpt-4o-mini",
+        var requireApiKey: Boolean = true
     )
 
     private var state = SettingsState()

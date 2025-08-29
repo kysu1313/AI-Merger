@@ -1,6 +1,7 @@
 package com.merger.merger.ai
 
 import com.intellij.openapi.options.Configurable
+import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
 import javax.swing.JComponent
@@ -10,6 +11,7 @@ class AiSettingsConfigurable : Configurable {
     private var baseUrl = settings.state.baseUrl
     private var model   = settings.state.model
     private var apiKeyUi: String = AiSecrets.get().orEmpty()
+    private var requireApiKey = settings.state.requireApiKey
 
     override fun getDisplayName() = "AI Merge"
     override fun createComponent(): JComponent = panel {
@@ -26,6 +28,9 @@ class AiSettingsConfigurable : Configurable {
                     override fun changedUpdate(e: javax.swing.event.DocumentEvent?) = sync()
                 })
                 comment("Stored in Password Safe (encrypted). Not written to project files.")
+            }
+            row("API key required: ") {
+                checkBox("").bindSelected(::requireApiKey)
             }
             row {
                 button("Clear saved key") { AiSecrets.save(null); apiKeyUi = "" }

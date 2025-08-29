@@ -11,7 +11,8 @@ import java.net.http.HttpResponse
 class OpenAICompatibleMergeEngine(
     private val baseUrl: String,
     private val apiKey: String,
-    private val model: String
+    private val model: String,
+    private val apiKeyRequired: Boolean = true
 ) : AiMergeEngine {
 
     private val client = HttpClient.newHttpClient()
@@ -58,12 +59,20 @@ Respond with the final merged file content only.
         )
 
 
-        val request = HttpRequest.newBuilder()
-            .uri(URI.create("${baseUrl.trimEnd('/')}/chat/completions"))
-            .header("Authorization", "Bearer $apiKey")
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(body)))
-            .build()
+        val builder = HttpRequest.newBuilder()
+
+        if (!apiKeyRequired && apiKey.isBlank()) {
+            builder.uri(URI.create("${baseUrl.trimEnd('/')}/chat/completions"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(body)))
+        } else {
+            builder.uri(URI.create("${baseUrl.trimEnd('/')}/chat/completions"))
+                .header("Authorization", "Bearer $apiKey")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(body)))
+        }
+
+        val request = builder.build();
 
         val resp = client.send(request, HttpResponse.BodyHandlers.ofString())
         if (resp.statusCode() !in 200..299) {
@@ -77,7 +86,6 @@ Respond with the final merged file content only.
         return AiMergeResult.Success(text)
     }
 
-    // --- DTOs ---
     data class Request(
         val model: String,
         @SerializedName("max_tokens") val maxTokens: Int,

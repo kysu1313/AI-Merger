@@ -119,7 +119,15 @@ class MergeRunner(
                 val s = AiSettings.getInstance().state
                 val key = AiSecrets.get()
                     ?: ""
-                val eng = OpenAICompatibleMergeEngine(s.baseUrl, key, s.model)
+                if (key.isEmpty() && s.requireApiKey) {
+                    notifications.createNotification(
+                        "AI Merge",
+                        "No API key found. Please set one in the plugin settings.",
+                        NotificationType.ERROR
+                    ).notify(project)
+                    return
+                }
+                val eng = OpenAICompatibleMergeEngine(s.baseUrl, key, s.model ,s.requireApiKey)
                 AiMergeOrchestrator(project, log).tryResolveWithAi(
                     repo, eng, AiMergePrefs(maxTokens = 8000, temperature = 0.1, stageOnSuccess = true), opts.languageModeProp
                 )

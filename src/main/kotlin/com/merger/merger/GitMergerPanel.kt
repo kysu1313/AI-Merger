@@ -16,6 +16,8 @@ import javax.swing.*
 import com.merger.merger.ai.AiSecrets
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.ui.JBSplitter
+import com.jetbrains.rider.multiPlatform.xcAssets.models.colorComponentFromColor
+import java.awt.Color
 
 data class MergeOptions(
     var sourceBranch: String = "",
@@ -114,8 +116,14 @@ class GitMergerPanel(private val project: Project) {
                     val validations = mainPanel.validateAll()
                     if (validations.isNotEmpty()) return@button
                     runMerges()
+                }.applyToComponent {
+                    putClientProperty("JButton.buttonType", "default")
                 }.component
                 runButton.isEnabled = false
+
+                SwingUtilities.invokeLater {
+                    SwingUtilities.getRootPane(runButton)?.defaultButton = runButton
+                }
 
                 button("AI Settings…") {
                     ShowSettingsUtil.getInstance().showSettingsDialog(project, "AI Merge")
